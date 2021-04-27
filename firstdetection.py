@@ -1,5 +1,10 @@
 import cv2
-webcam = cv2.VideoCapture(0)
+
+webcam = cv2.VideoCapture(1)
+'''
+ip = 'http://192.168.255.112:8080/video'
+webcam = cv2.VideoCapture(ip)
+'''
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 while(True):
