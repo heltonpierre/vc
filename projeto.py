@@ -1,21 +1,20 @@
 import cv2
-<<<<<<< HEAD
 
-webcam = cv2.VideoCapture(1)
+webcam = cv2.VideoCapture(0)
 
 #webcam = cv2.VideoCapture('1.mp4')
 '''
 ip = 'http://192.168.255.112:8080/video'
 webcam = cv2.VideoCapture(ip)
 '''
-=======
-webcam = cv2.VideoCapture(1)
->>>>>>> e1413e31e1117f25b996ba33880ceb8e859639fe
+
+#webcam = cv2.VideoCapture(1)
+
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 qtd_pessoas = int(0)
 
-fgbg = cv2.createBackgroundSubtractorGMG()
+#fgbg = cv2.createBackgroundSubtractorGMG()
 
 while(True):
     s, video = webcam.read()

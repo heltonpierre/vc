@@ -11,19 +11,21 @@ def center(x, y, w, h):
 #cap = cv2.VideoCapture('1.mp4')
 #cap = cv2.VideoCapture('http://177.72.3.203:8001/mjpg/video.mjpg?timestamp=1619567405080')
 
-url = 'http://153.156.230.207:8084/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000'
-url = 'https://www.youtube.com/watch?v=eJ7ZkQ5TC08'
+#url = 'http://153.156.230.207:8084/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000'
+#url = 'http://138.186.1.6/mjpg/video.mjpg' #500x281
+url = 'http://www.insecam.org/en/view/916089/'
 cap = cv2.VideoCapture(url)
 
 fgbg = cv2.createBackgroundSubtractorMOG2()
 
 detects = []
 
-posL = 150
-offset = 30
+#Configuração das linhas 
+posL = 200
+offset = 80
 
-xy1 = (20, posL)
-xy2 = (300, posL)
+xy1 = (2, posL)
+xy2 = (600, posL)
 
 
 total = 0

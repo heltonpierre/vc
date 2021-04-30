@@ -67,6 +67,9 @@ while True:
     frame_opening = cv2.morphologyEx(frame_thresh, cv2.MORPH_OPEN, kernel, iterations = 2)
     cv2.imshow("Morphology opening", frame_opening)
 
+    #Dilatacao do frame binarizado, com finalidade de eliminar "buracos" / zonas brancas dentro de contornos detectados. 
+    #Dessa forma, objetos detectados serao considerados uma "massa" de cor branca
+    
     frame_dilation = cv2.dilate(frame_opening,kernel,iterations = 8)
     cv2.imshow("Morphology dilation", frame_dilation)
 
@@ -78,8 +81,8 @@ while True:
     cv2.line(frame,(xy1[0],posL-offset),(xy2[0],posL-offset),(255,255,0),2)
 
     cv2.line(frame,(xy1[0],posL+offset),(xy2[0],posL+offset),(255,255,0),2)
-
-    contours, hierarchy = cv2.findContours(frame_dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    # Extraindo o contorno das massas em movimento.
+    contours, _ = cv2.findContours(frame_dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     i = 0
     for cnt in contours:
         (x,y,w,h) = cv2.boundingRect(cnt)
