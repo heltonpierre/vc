@@ -11,19 +11,15 @@ def center(x, y, w, h):
 #variaveis globais
 width = 0
 height = 0
-
-#Configuração das linhas 
-posL = 200
-offset = 80
-
-xy1 = (2, posL)
-xy2 = (600, posL)
-
-
 total = 0
+saindo = 0
+entrando = 0
 
-up = 0
-down = 0
+#parâmetros empíricos ajustados conforme a necessidade
+AreaContornoLimiteMin = 3000  
+ThresholdBinarizacao = 200  
+OffsetLinhasRef = 30
+PosL = 200
 
 source = '1.mp4'
 camera = cv2.VideoCapture(source)
@@ -35,8 +31,6 @@ camera.set(4,480)
 mask_original = cv2.createBackgroundSubtractorMOG2()
 
 detects = []
-
-
 
 while True:
     status, frame = camera.read()
@@ -58,7 +52,7 @@ while True:
     cv2.imshow("Máscara Cinza", mask_gray)
 
     #Binarizacao do frame com background subtraido (remover ruídos)
-    frame_thresh = cv2.threshold(mask_gray, 200, 255, cv2.THRESH_BINARY)[1] #Apenas Preto e Branco
+    frame_thresh = cv2.threshold(mask_gray, ThresholdBinarizacao, 255, cv2.THRESH_BINARY)[1] #Apenas Preto e Branco
     cv2.imshow("Frame Binarizado", frame_thresh)
 
     #Tratamento para remoção de ruídos. 
@@ -76,28 +70,35 @@ while True:
     closing = cv2.morphologyEx(frame_dilation, cv2.MORPH_CLOSE, kernel, iterations = 8)
     cv2.imshow("closing", closing)
 
-    cv2.line(frame,xy1,xy2,(255,0,0),3)
+    #Gerando as linhas de referencias 
+    CoordenadaYLinhaCentro = int(height / 2)
+    CoordenadaYLinhaEntrada = int(height / 2) + OffsetLinhasRef
+    CoordenadaYLinhaSaida = int(height / 2) - OffsetLinhasRef
+    xy1 = (0,CoordenadaYLinhaCentro)
+    xy2 = (width,CoordenadaYLinhaCentro)
 
-    cv2.line(frame,(xy1[0],posL-offset),(xy2[0],posL-offset),(255,255,0),2)
+    cv2.line(frame, (0,CoordenadaYLinhaEntrada), (width,CoordenadaYLinhaEntrada),(255,0,0),2)
+    cv2.line(frame, (0,CoordenadaYLinhaCentro), (width,CoordenadaYLinhaCentro), (255, 0, 255), 2)
+    cv2.line(frame, (0,CoordenadaYLinhaSaida), (width,CoordenadaYLinhaSaida), (0, 0, 255), 2)
 
-    cv2.line(frame,(xy1[0],posL+offset),(xy2[0],posL+offset),(255,255,0),2)
     # Extraindo o contorno das massas em movimento.
-    contours, _ = cv2.findContours(frame_dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    contornos_frame, _ = cv2.findContours(frame_dilation.copy(),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+
     i = 0
-    for cnt in contours:
-        (x,y,w,h) = cv2.boundingRect(cnt)
+    for contorno in contornos_frame:
+        (x,y,w,h) = cv2.boundingRect(contorno)  #x e y: coordenadas do vertice superior esquerdo
+                                                #w e h: respectivamente largura e altura do retangulo
 
-        area = cv2.contourArea(cnt)
+        area = cv2.contourArea(contorno)
         
-        if int(area) > 3000 :
+        if int(area) > AreaContornoLimiteMin:
             centro = center(x, y, w, h)
-
-            cv2.putText(frame, str(i), (x+5, y+15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+            cv2.putText(frame, str(i), (x+10, y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
             cv2.circle(frame, centro, 4, (0, 0,255), -1)
-            cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0,255,0), 2)
             if len(detects) <= i:
                 detects.append([])
-            if centro[1]> posL-offset and centro[1] < posL+offset:
+            if centro[1]> CoordenadaYLinhaCentro - OffsetLinhasRef and centro[1] < CoordenadaYLinhaCentro + OffsetLinhasRef:
                 detects[i].append(centro)
             else:
                 detects[i].clear()
@@ -108,7 +109,7 @@ while True:
 
     i = 0
 
-    if len(contours) == 0:
+    if len(contornos_frame) == 0:
         detects.clear()
 
     else:
@@ -117,16 +118,16 @@ while True:
             for (c,l) in enumerate(detect):
 
 
-                if detect[c-1][1] < posL and l[1] > posL :
+                if detect[c-1][1] < CoordenadaYLinhaCentro and l[1] > CoordenadaYLinhaCentro :
                     detect.clear()
-                    up+=1
+                    saindo+=1
                     total+=1
                     cv2.line(frame,xy1,xy2,(0,255,0),5)
                     continue
 
-                if detect[c-1][1] > posL and l[1] < posL:
+                if detect[c-1][1] > CoordenadaYLinhaCentro and l[1] < CoordenadaYLinhaCentro:
                     detect.clear()
-                    down+=1
+                    entrando+=1
                     total+=1
                     cv2.line(frame,xy1,xy2,(0,0,255),5)
                     continue
@@ -134,9 +135,10 @@ while True:
                 if c > 0:
                     cv2.line(frame,detect[c-1],l,(0,0,255),1)
 
-    cv2.putText(frame, "TOTAL: "+str(total), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
-    cv2.putText(frame, "SUBINDO: "+str(up), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),2)
-    cv2.putText(frame, "DESCENDO: "+str(down), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),2)
+    cv2.putText(frame, "TOTAL PASSARAM: "+str(total), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+    cv2.putText(frame, "TOTAL DENTRO: "+str(entrando - saindo), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+    cv2.putText(frame, "SAINDO: "+str(saindo), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),2)
+    cv2.putText(frame, "ENTRADO: "+str(entrando), (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),2)
 
     cv2.imshow("frame", frame)
 
